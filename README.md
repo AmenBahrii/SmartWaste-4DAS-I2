@@ -22,6 +22,7 @@ The system is structured as an ecosystem of distributed Spring Boot microservice
 │   ├── fleet-routing-service/
 │   ├── incident-reporting-service/
 │   └── real-time-alerts-service/
+├── Frontend/
 ├── Documentation/
 │   ├── Diagrams/
 │   └── Presentation/
