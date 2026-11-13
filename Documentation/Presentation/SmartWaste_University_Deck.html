@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartWaste – Smart City Waste &amp; Recycling Manager</title>
+<style>
+:root{--bg:#071a2b;--card:#102b42;--ink:#fff;--mut:#9fb3c8;--b:#3b82d6;--g:#4caf6d;--p:#8a63d2;--o:#ef7d3c;--y:#e8b84a;--t:#00a6a6}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:#020c15;overflow:hidden;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink)}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;background:var(--bg)}
+.s{display:none;position:absolute;inset:0;padding:48px 60px}
+.s.on{display:block}
+.k{font-size:13px;letter-spacing:.2em;font-weight:700;color:var(--o);margin-bottom:10px}
+h1{font-size:44px;line-height:1.1}
+h2{font-size:38px;line-height:1.15;margin-bottom:8px}
+.sub{color:var(--mut);font-size:18px;margin-bottom:24px}
+.grid{display:grid;gap:18px}
+.c{background:var(--card);padding:20px 22px;border-top:4px solid var(--col,var(--o));border-radius:4px}
+.c h3{font-size:21px;margin-bottom:8px;color:var(--col,#fff)}
+.c p,.c li{font-size:16.5px;line-height:1.45;color:#dbe6f0}
+.c ul{padding-left:18px}
+.tag{font-weight:700;font-size:13px;margin-left:6px}
+.note{margin-top:20px;background:var(--card);padding:14px 20px;font-size:17px;border-left:4px solid var(--o)}
+.note b{color:var(--o)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+th{background:#0d2236;text-align:left;padding:11px 12px;border-bottom:2px solid var(--o)}
+td{padding:11px 12px;border-bottom:1px solid #1d3a55;color:#dbe6f0;vertical-align:top}
+tr td:first-child{font-weight:700}
+code,.mono{font-family:Consolas,monospace;font-size:14.5px}
+.cls{background:var(--card);border:2px solid var(--col);border-radius:4px;overflow:hidden}
+.cls h4{background:var(--col);padding:9px 14px;font-size:18px;text-align:center}
+.cls div{padding:10px 14px;font-family:Consolas,monospace;font-size:14.5px;line-height:1.55;color:#dbe6f0}
+.flow{display:flex;gap:10px;align-items:stretch}
+.flow .c{flex:1}
+.pre{background:#06121f;padding:14px;font-family:Consolas,monospace;font-size:14px;line-height:1.5;color:#cfe3f5;margin-top:10px;white-space:pre}
+#nav{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;color:var(--mut);font-size:14px;z-index:9}
+#nav button{background:#12304a;color:#fff;border:0;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:15px}
+#nav button:focus-visible{outline:2px solid var(--y)}
+.title{display:flex;flex-direction:column;justify-content:center;background:linear-gradient(100deg,#071a2b 55%,#12405a)}
+.title h1{font-size:64px}
+.title .bar{height:6px;width:60%;background:var(--g);margin:50px 0 14px}
+</style></head><body>
+<div id="stage"></div>
+<div id="nav"><button id="pv" aria-label="Previous slide">◀ Prev</button><span id="ct"></span><button id="nx" aria-label="Next slide">Next ▶</button></div>
+<script>
+const V={b:'var(--b)',g:'var(--g)',p:'var(--p)',o:'var(--o)',y:'var(--y)',t:'var(--t)'};
+const hd=(k,t,s)=>`<div class="k">${k}</div><h2>${t}</h2>${s?`<div class="sub">${s}</div>`:''}`;
+const cards=(k,t,s,items,cols,note)=>`${hd(k,t,s)}<div class="grid" style="grid-template-columns:repeat(${cols},1fr)">${items.map(i=>`<div class="c" style="--col:${V[i.c||'o']}"><h3>${i.h}</h3>${Array.isArray(i.t)?'<ul>'+i.t.map(x=>`<li>${x}</li>`).join('')+'</ul>':`<p>${i.t}</p>`}</div>`).join('')}</div>${note?`<div class="note">${note}</div>`:''}`;
+const tbl=(k,t,s,h,r,note)=>`${hd(k,t,s)}<table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r.map(x=>`<tr>${x.map(y=>`<td>${y}</td>`).join('')}</tr>`).join('')}</table>${note?`<div class="note">${note}</div>`:''}`;
+const cls=(k,t,s,items,note)=>`${hd(k,t,s)}<div class="grid" style="grid-template-columns:repeat(${items.length},1fr)">${items.map(i=>`<div class="cls" style="--col:${V[i.c]}"><h4>${i.n}</h4><div>${i.f.join('<br>')}</div></div>`).join('')}</div>${note?`<div class="note">${note}</div>`:''}`;
+const ms=(c,k,t,s,items,side,note)=>`${hd(k,t,s)}<div class="grid" style="grid-template-columns:2fr 1fr"><div class="grid">${items.map((i,n)=>`<div class="c" style="--col:${V[c]}"><h3>${n+1}. ${i[0]}</h3><p>${i[1]}</p></div>`).join('')}</div><div class="c" style="--col:${V[c]}">${side}</div></div>${note?`<div class="note">${note}</div>`:''}`;
+const side=a=>a.map(([l,v])=>`<div style="font-size:12px;letter-spacing:.15em;color:var(--mut);margin-top:10px">${l}</div><div style="font-size:19px;font-weight:700">${v}</div>`).join('');
+const tg=(t,c)=>`<span class="tag" style="color:${V[c]}">${t}</span>`;
+const actor=(n,c,a)=>({h:n,c,t:a.map(([x,m,cc])=>`${x} ${tg(m,cc)}`)});
+const apiT=(rows)=>rows.map(r=>[`<b style="color:var(--g)">${r[0]}</b>`,`<code>${r[1]}</code>`,r[2],r[3]]);
+const S=[
+`<div class="title" style="position:absolute;inset:0;padding:60px"><h1>SmartWaste<br>Smart City Waste &amp;<br>Recycling Manager</h1><div class="bar"></div><div style="font-size:18px">Yasmine Mahfoudh &nbsp;·&nbsp; Amen Bahri &nbsp;·&nbsp; Youssef Zaiem &nbsp;·&nbsp; Med Abdallah</div></div>`,
+cards('THE PROJECT','The problem: cities collect on a schedule, waste happens in real time','',[
+{h:'01 Overflowing bins, wrong routes',t:'Trucks follow fixed schedules, not real needs. Full bins wait while half-empty bins are visited.',c:'t'},
+{h:'02 Slow, scattered reporting',t:'Citizens have no simple way to report a broken or full bin. Problems stay for days.',c:'t'},
+{h:'03 No live feedback loop',t:'Nobody is warned in time, and good recycling is rewarded too late. People stop taking part.',c:'t'}],1,'<b>Our goal:</b> close the gap between what happens in the street, what citizens do, and what the collection teams know.'),
+cards('THE PROJECT','Our solution: one platform, five independent services','SmartWaste is a centralized platform that connects citizens, garbage trucks, smart recycling bins and city administrators.',[
+{h:'MONITOR',c:'g',t:'Smart bins send their fill level, so we always know which bins are full.'},
+{h:'PLAN',c:'p',t:'Pickup routes are built from real data, not from a fixed calendar.'},
+{h:'ENGAGE',c:'o',t:'Citizens report incidents with a photo and earn eco-points.'},
+{h:'NOTIFY',c:'y',t:'Real-time alerts reach the right person at the right time.'},
+{h:'Expected benefits',c:'o',t:['Cleaner public spaces','Fewer unnecessary collection trips','Better recycling participation','Faster incident resolution','Better use of city resources']}],3),
+cards('MAIN FEATURES','Main features for each actor','Each feature is provided by one microservice (MS1 to MS5).',[
+actor('CITIZEN','t',[['Register and log in','MS1','b'],['Manage profile','MS1','b'],['Find smart bins','MS2','g'],['Report an incident with a photo','MS4','o'],['Earn and view eco-points','MS1','b'],['Receive notifications','MS5','y']]),
+actor('DRIVER','g',[['View assigned pickup routes','MS3','p'],['Update route status','MS3','p'],['See smart bins and fill level','MS2','g'],['Receive alerts','MS5','y']]),
+actor('ADMINISTRATOR','b',[['Manage users, award points','MS1','b'],['Manage smart bins and types','MS2','g'],['Monitor bin fill levels','MS2','g'],['Manage trucks and routes','MS3','p'],['Review incident reports','MS4','o'],['Monitor system alerts','MS5','y']])],3,'<b>For everyone:</b> secure login (Keycloak + JWT), one entry point (API Gateway) and real-time notifications.'),
+cards('ACTORS AND GENERAL USE CASE','General use case diagram: who does what','Three actors. All users have to be authenticated (Keycloak). Colour = microservice: MS1 Identity · MS2 Bin Asset · MS3 Fleet · MS4 Incidents · MS5 Alerts.',[
+{h:'Citizen',c:'t',t:['Manage profile (MS1)','View points and rewards (MS1)','View smart bins (MS2)','Submit incident report (MS4) – «include» Upload photo','Receive notifications (MS5)']},
+{h:'Driver',c:'g',t:['View assigned routes (MS3)','Update route status (MS3)','View smart bins (MS2)','Receive notifications (MS5)']},
+{h:'Administrator',c:'b',t:['Manage users (MS1)','Award eco-points (MS1)','Manage smart bins and types (MS2)','Monitor bin fill levels (MS2)','Manage routes and trucks (MS3)','Manage incident reports (MS4)','Monitor system alerts (MS5)']}],3),
+`${hd('MICROSERVICES','Five services, one responsibility each','Split by business capability, not by database table or by screen.')}<div class="grid" style="grid-template-columns:repeat(5,1fr)">${[
+['b','MS1','Identity &amp; Rewards',['Register, log in, profile','User roles','Eco-points and rewards'],'User, RewardHistory','PostgreSQL',''],
+['g','MS2','Smart Bin Asset',['Bin location and capacity','Fill level','Bin types'],'SmartBin, BinType','MongoDB','Publishes BinFullEvent'],
+['p','MS3','Fleet &amp; Routing',['Garbage trucks','Pickup routes','Route status'],'GarbageTruck, PickupRoute','PostgreSQL','Consumes BinFullEvent'],
+['o','MS4','Incident Reporting',['Citizen reports + photo','Report status','Announces new reports'],'IncidentReport','MongoDB','Publishes IncidentReportedEvent'],
+['y','MS5','Real-Time Alerts',['Listens to events','Creates alerts','Notifies users by role'],'Alert','H2','Consumes IncidentReportedEvent']].map(m=>`<div class="c" style="--col:${V[m[0]]};min-height:430px"><h3>${m[1]}</h3><div style="font-size:19px;font-weight:700;margin-bottom:10px">${m[2]}</div><ul>${m[3].map(x=>`<li>${x}</li>`).join('')}</ul>${side([['OWNS',m[4]],['DATABASE',m[5]]])}<p style="font-style:italic;color:${V[m[0]]};margin-top:10px;font-size:14px">${m[6]}</p></div>`).join('')}</div><div class="note">MS5 is our advanced-technology service: event-driven and real-time, built on RabbitMQ.</div>`,
+cls('DOMAIN','SmartWaste class diagram (whole domain)','Conceptual model. Colour shows which microservice owns each class. Across services, links are plain ids (userId, binId, routeId): no foreign keys.',[
+{n:'User (MS1)',c:'b',f:['id: Long','username: String','email: String {unique}','role: String','pointsBalance: Integer','1 ── 0..* RewardHistory']},
+{n:'SmartBin (MS2)',c:'g',f:['id: String','latitude, longitude: Double','capacity: Double','fillLevel: Double','status: String','0..* ── 1 BinType']},
+{n:'PickupRoute (MS3)',c:'p',f:['id: Long','scheduledDate: LocalDate','status: RouteStatus','collects 1..* SmartBin','uses 1 GarbageTruck']},
+{n:'IncidentReport (MS4)',c:'o',f:['id, title, description: String','imagePath: String','createdAt: LocalDateTime','status: ReportStatus','→ userId, binId']},
+{n:'Alert (MS5)',c:'y',f:['id: Long','eventId: UUID','message: String','severity: String','targetRole: String','createdAt: LocalDateTime']}],'Other classes: RewardHistory (MS1) · BinType (MS2) · GarbageTruck (MS3: licensePlate, capacity) · RouteStatus (PLANNED, IN_PROGRESS, COMPLETED) · ReportStatus (PENDING, RESOLVED, REJECTED)'),
+cards('TECHNOLOGIES','The chosen technologies','Each choice matches the required microservices stack.',[
+{h:'BACKEND · Java · Spring Boot',c:'b',t:'REST APIs, one Spring Boot project per microservice.'},
+{h:'SPRING CLOUD · Gateway · Eureka · Config · OpenFeign',c:'p',t:'Entry point, discovery, central config and service-to-service calls.'},
+{h:'SECURITY · Keycloak · OAuth2 · JWT',c:'o',t:'Login, roles and signed tokens checked by the gateway.'},
+{h:'MESSAGING · RabbitMQ',c:'y',t:'Asynchronous events through the exchange smartwaste.events.'},
+{h:'DATABASES · PostgreSQL · MongoDB · H2',c:'g',t:'One database per service, chosen for the data.'},
+{h:'FRONT AND DEVOPS · Angular / React · Flutter · Docker · Git',c:'t',t:'Web and mobile apps, containers, version control.'}],3),
+cards('ARCHITECTURE','The building blocks, explained simply','Each block solves one problem of a microservices system.',[
+{h:'API Gateway – the single front door',c:'b',t:'Routes each request to the right service and checks the JWT. Services are never exposed directly.'},
+{h:'Keycloak – the identity provider',c:'o',t:'Handles login and gives a signed JWT with the user’s role (citizen, driver, admin).'},
+{h:'Eureka Server – the phone book',c:'t',t:'Services register with their name. Others find them by name, not by fixed address.'},
+{h:'Config Server – the settings office',c:'p',t:'Gives each service its configuration at start-up from one Git repository (config-repo).'},
+{h:'RabbitMQ – the post office',c:'y',t:'Carries asynchronous events (BinFullEvent, IncidentReportedEvent) from a publisher to its consumers.'},
+{h:'Docker Compose – the container manager',c:'g',t:'Starts every service in its own container, on one private network (smartwaste-net).'}],3),
+tbl('DATA','One database per service, chosen for the job','No shared database: a service can only read another service’s data through its API or an event.',['Service','Database','Why this choice','Data it owns'],[
+['<span style="color:var(--b)">MS1 Identity</span>','PostgreSQL','Structured, linked data (users, points). Points must always be exact: relational tables and transactions.','User, RewardHistory'],
+['<span style="color:var(--g)">MS2 Bin Asset</span>','MongoDB','Bins have flexible data (location, sensors) and frequent fill-level updates: a document store fits.','SmartBin, BinType'],
+['<span style="color:var(--p)">MS3 Fleet</span>','PostgreSQL','Trucks, routes and statuses are clearly related: relational tables keep them consistent.','GarbageTruck, PickupRoute'],
+['<span style="color:var(--o)">MS4 Incidents</span>','MongoDB','A report is one self-contained document (text, photo path, status). Easy to add fields later.','IncidentReport'],
+['<span style="color:var(--y)">MS5 Alerts</span>','H2','Alerts are simple and short-lived: a light database is enough and starts fast.','Alert']],'<b>1</b> One database per microservice &nbsp;·&nbsp; <b>2</b> No shared tables, no foreign key between services &nbsp;·&nbsp; <b>3</b> Other services get data by API call or by event'),
+tbl('ARCHITECTURE','Communication: five flows, two modes','',['#','From → To','Mode','What is exchanged','Why this mode'],[
+['1','MS4 → MS1','<span style="color:var(--b)">Sync · OpenFeign</span>','GET /api/users/{id}: does the reporter exist?','The answer is needed before saving the report'],
+['2','MS4 → MS2','<span style="color:var(--b)">Sync · OpenFeign</span>','GET /api/bins/{id}: does the bin exist?','Same: do not save a report about a missing bin'],
+['3','MS3 → MS2','<span style="color:var(--b)">Sync · OpenFeign</span>','GET /api/bins/{id}: bin location and capacity','Route planning needs the data right now'],
+['4','MS2 → MS3','<span style="color:var(--g)">Async · RabbitMQ</span>','BinFullEvent: bin id, location, fill level','MS2 must not wait for MS3'],
+['5','MS4 → MS5','<span style="color:var(--g)">Async · RabbitMQ</span>','IncidentReportedEvent: report id, bin, title, date','Alerts must not slow down the citizen']],'<b>Synchronous = a phone call:</b> the caller waits; if the other service is down: timeout, then a fallback (report saved as PENDING). &nbsp;<b>Asynchronous = a letter:</b> the sender continues; if the consumer is down, the message waits in the queue.'),
+`${hd('ARCHITECTURE','Security: login once, check every request','Keycloak issues the pass (JWT). The gateway checks it.')}<div class="flow">${[['Log in','The user signs in on Keycloak from the web or mobile app.'],['Get a token','Keycloak returns a JWT: a signed digital pass that contains the user’s role.'],['Call the API','The app sends every request to the gateway with the JWT.'],['Check the token','The gateway verifies the signature with Keycloak’s public keys. Invalid: 401.'],['Forward','If valid, the gateway routes the request to the right service.']].map((x,i)=>`<div class="c"><h3>${i+1}. ${x[0]}</h3><p>${x[1]}</p></div>`).join('')}</div><div class="grid" style="grid-template-columns:repeat(4,1fr);margin-top:18px">${[['CITIZEN','t','Report incidents, see own points and notifications'],['DRIVER','g','See assigned routes, update route status'],['ADMINISTRATOR','b','Manage users, bins, routes, reports and alerts'],['Key rules','o','Only the gateway is public. Services stay in a private network. No token: 401. Wrong role: 403.']].map(x=>`<div class="c" style="--col:${V[x[1]]}"><h3>${x[0]}</h3><p>${x[2]}</p></div>`).join('')}</div>`,
+cards('ARCHITECTURE','Technical architecture (microservices &amp; data flow)','Public network → API Gateway → private Docker Compose network (smartwaste-net).',[
+{h:'Public network',c:'b',t:['Web app (Angular / React)','Mobile app (Flutter / native)','Every call goes through the gateway with a Bearer JWT','Keycloak :9189 (realm smartwaste)']},
+{h:'API Gateway',c:'o',t:['Validates the JWT with Keycloak’s public keys','Routes: /api/users, /api/bins, /api/routes, /api/incidents, /api/alerts']},
+{h:'Business microservices',c:'g',t:['MS1 identity :8081 → Identity_db (PostgreSQL)','MS2 bin-asset :8082 → bin_db (MongoDB)','MS3 fleet-routing :8083 → Fleet_db (PostgreSQL)','MS4 incident-reporting :8084 → Incident_db (MongoDB)','MS5 real-time-alerts :8085 → Alerts_db (H2)']},
+{h:'Infrastructure',c:'y',t:['RabbitMQ :5672 (UI :15672), exchange smartwaste.events (topic)','Eureka Server :8761 · Config Server :8888','config-repo on Git','Sync: OpenFeign · Async: RabbitMQ']}],4),
+cards('NEXT','Now: each member presents a microservice','Design (class diagram), interactions and API contract for each service.',[
+{h:'MS1',c:'b',t:'Identity &amp; Rewards'},{h:'MS2',c:'g',t:'Smart Bin Asset'},{h:'MS3',c:'p',t:'Fleet &amp; Routing'},{h:'MS4',c:'o',t:'Incident Reporting'},{h:'MS5',c:'y',t:'Real-Time Alerts'}],5),
+/* MS1 */
+cards('MS1 · IDENTITY &amp; REWARDS','MS1: scope and work plan','Owns User, RewardHistory · Database: MySQL (as stated on the MS1 slide; the overview slide says PostgreSQL)',[
+{h:'1 Data model',c:'b',t:'User and RewardHistory tables'},{h:'2 Auth',c:'b',t:'Register, login, roles'},{h:'3 Profile and rewards',c:'b',t:'User and reward-history endpoints'},{h:'4 Events',c:'b',t:'Consume IncidentResolvedEvent, award points'},{h:'5 Tests and docs',c:'b',t:'Unit tests, API contract'}],5,'<b>Responsibilities:</b> register, log in, profile · user roles · eco-points and rewards'),
+cls('MS1 · IDENTITY &amp; REWARDS','Class diagram','User 1 ── 0..* RewardHistory (has / earns)',[
+{n:'User',c:'b',f:['id: Long','username: String','email: String {unique}','role: String','pointsBalance: Integer']},
+{n:'RewardHistory',c:'b',f:['id: Long','points: Integer','reason: String','awardedAt: LocalDateTime']}],'<b>Interactions:</b> User.id is stored as a plain userId in MS4: no foreign key crosses services. Sync: MS4 calls MS1 over REST to validate a userId. Async: MS1 listens for an incident-resolved event from MS4 and awards eco-points.'),
+tbl('MS1 · IDENTITY &amp; REWARDS','API contracts','',['Method','Endpoint','Response codes','Purpose'],apiT([['POST','/api/auth/register','201, 400, 409','Create an account'],['POST','/api/auth/login','200, 401','Authenticate, return token'],['GET','/api/users/{id}','200, 404','Read profile and balance'],['PUT','/api/users/{id}','200, 400, 404','Update profile'],['GET','/api/users/{id}/rewards','200, 404','List RewardHistory'],['POST','/api/users/{id}/points','200, 400, 404','Award points (internal)']]),'<b>Events:</b> consumes IncidentResolvedEvent (from MS4): creates a RewardHistory entry and increments pointsBalance in one transaction. Duplicate events are ignored by eventId.'),
+/* MS2 */
+cards('MS2 · SMART BIN ASSET','MS2: scope and work plan','Owns SmartBin, BinType · Database: MongoDB',[
+{h:'1 Data model',c:'g',t:'SmartBin and BinType collections'},{h:'2 Bin CRUD',c:'g',t:'Bins and bin types endpoints'},{h:'3 Fill level',c:'g',t:'PATCH fill-level with validation'},{h:'4 Events',c:'g',t:'Publish BinFullEvent at threshold'},{h:'5 Tests and docs',c:'g',t:'Unit tests, API contract'}],5,'<b>Responsibilities:</b> bin location and capacity · fill level · bin types'),
+cls('MS2 · SMART BIN ASSET','Class diagram','BinType 1 ── 0..* SmartBin (belongs to)',[
+{n:'BinType',c:'g',f:['id: String','name: String {unique}','recyclable: boolean']},
+{n:'SmartBin',c:'g',f:['id: String','latitude: Double','longitude: Double','capacity: Double','fillLevel: Double','status: String']}],'<b>Interactions:</b> SmartBin.id is stored as binId in MS3 (PickupRoute) and MS4 (IncidentReport). Sync: MS3 and MS4 call MS2 over REST to check a bin. Async: MS2 publishes BinFullEvent when fillLevel crosses the threshold.'),
+tbl('MS2 · SMART BIN ASSET','API contracts','',['Method','Endpoint','Response codes','Purpose'],apiT([['POST','/api/bins','201, 400, 404','Register a bin'],['GET','/api/bins','200','List bins (filter by type, status)'],['GET','/api/bins/{id}','200, 404','Read one bin'],['PATCH','/api/bins/{id}/fill-level','200, 400, 404','Update fill level, may emit event'],['GET','/api/bin-types','200','List bin types'],['POST','/api/bin-types','201, 400, 409','Create a bin type']]),'<b>Events:</b> publishes BinFullEvent {eventId, binId, fillLevel, occurredAt} when fillLevel reaches the threshold. Consumed by MS5 (alerts) and MS3 (routing).'),
+cards('COMMUNICATION','Synchronous vs asynchronous','',[
+{h:'Sync (REST)',c:'b',t:'MS4 validates userId (MS1) and binId (MS2) over REST.'},
+{h:'Async (events)',c:'g',t:'MS2 publishes BinFullEvent to MS3 and MS5. MS4 emits IncidentResolvedEvent, MS1 awards points.'}],2),
+/* MS3 */
+ms('p','MS3','Fleet &amp; Routing Service','Admins plan truck routes. Drivers follow them until every bin is collected.',[
+['Manage trucks','Plate, capacity and status: AVAILABLE, ON_ROUTE or MAINTENANCE.'],['Plan daily routes','A truck, a driver, a date and an ordered list of bins, with the distance from a routing API.'],['Track the collection','Stops are marked collected. Publishes an event so MS2 resets the bins.']],side([['TECHNOLOGY','Spring Boot · port 8083'],['EUREKA NAME','FLEET-ROUTING-SERVICE'],['DATABASE','PostgreSQL (fleet_db)'],['GATEWAY ROUTE','/api/trucks · /api/routes']]),'<b>In simple words:</b> a microservice is a small program that does ONE job. The job of MS3: decide which truck collects which bins, and follow the collection until it is done.'),
+cls('MS3','MS3 design: one route, many stops','Truck 1 — 0..* Route · Route 1 — 1..* RouteStop. Other services are linked by id only (driverId → MS1, binId → MS2).',[
+{n:'Truck',c:'p',f:['id: Long','plateNumber: String','capacityKg: double','status: TruckStatus']},
+{n:'Route',c:'p',f:['id: Long','date: LocalDate','status: RouteStatus','truckId: Long','driverId: String','totalDistanceKm: double','durationMin: int','estimated: boolean']},
+{n:'RouteStop',c:'p',f:['id: Long','routeId: Long','binId: String','latitude, longitude: double','sequenceOrder: int','status: StopStatus','collectedAt: LocalDateTime']}],'<b>Enums:</b> TruckStatus (AVAILABLE, ON_ROUTE, MAINTENANCE) · RouteStatus (PLANNED, IN_PROGRESS, COMPLETED, CANCELLED) · StopStatus (PENDING, COLLECTED, SKIPPED). <b>Layers:</b> RouteController → RouteService → RouteRepository (PostgreSQL), BinClient + UserClient (OpenFeign), RoutingApiClient (REST), RouteEventPublisher (RabbitMQ). <b>Why PostgreSQL?</b> Transactions keep a truck from having two routes on one day.'),
+cards('MS3','MS3 interactions: sync to check, async to announce','Called by the API Gateway (/api/routes). Calls MS1, MS2 and a routing API. Publishes RouteCompletedEvent to RabbitMQ (smartwaste.events); MS2 consumes it and resets the bins.',[
+{h:'Sync · OpenFeign / REST',c:'b',t:'MS3 needs the answer before it builds the route: GET /api/users/{id} (check the driver), GET /api/bins/{id} (coordinates), routing API (distance + duration).'},
+{h:'MS1 or MS2 down',c:'o',t:'Timeout and circuit breaker: the route is refused with 503. Saved routes keep their stored coordinates.'},
+{h:'Routing API down',c:'y',t:'Straight-line estimate, route flagged estimated = true.'},
+{h:'RabbitMQ down',c:'g',t:'The route is still completed. The event is retried or waits in the queue.'}],4,'<b>In simple words:</b> sync is like a phone call: you wait for the answer. Async is like posting a letter: you drop it in the box and continue.'),
+`${tbl('MS3','MS3 API contract','Main endpoints, response codes and the published event.',['Method','URI','What it does','Codes'],apiT([['POST','/api/routes','Create a route','201 · 400 · 404 · 409 · 503'],['GET','/api/routes','List routes (date, status)','200'],['GET','/api/routes/{id}','Get a route with stops','200 · 404'],['PATCH','/api/routes/{id}/status','Start, complete, cancel','200 · 400 · 403 · 404'],['PATCH','/api/routes/{id}/stops/{stopId}','Mark a stop collected','200 · 400 · 404'],['POST','/api/routes/{id}/optimize','Reorder stops by distance','200 · 404 · 503'],['CRUD','/api/trucks[/{id}]','Manage trucks','200 · 201 · 204 · 400 · 404 · 409']]),'<b>All routes need a JWT</b> (401 if missing). Truck changes are admin only (403). Event: <b>RouteCompletedEvent</b> {eventId, routeId, truckId, completedAt, collectedBinIds[]}')}`,
+/* MS4 */
+ms('o','MS4','Incident Reporting Service','Citizens report a problem. Admins follow it until it is solved.',[
+['Receive reports','Title, description, photo and the bin concerned.'],['Follow the status','PENDING, then RESOLVED or REJECTED.'],['Announce new reports','Publishes an event so MS5 can alert the admins.']],side([['TECHNOLOGY','Spring Boot · port 8084'],['EUREKA NAME','INCIDENT'],['DATABASE','MongoDB (incident_db)'],['GATEWAY ROUTE','/api/incidents']]),'<b>In simple words:</b> the job of MS4 is to handle problems that citizens report, for example a full bin, a broken bin or rubbish on the ground.'),
+cls('MS4','MS4 design: one report, one document','Other services are linked by id only: userId (→ User, MS1) and binId (→ SmartBin, MS2).',[
+{n:'IncidentReport',c:'o',f:['id: String','title: String','description: String','imagePath: String','createdAt: LocalDateTime','status: ReportStatus','userId: Long','binId: String']},
+{n:'«enumeration» ReportStatus',c:'o',f:['PENDING','RESOLVED','REJECTED']}],'<b>Why MongoDB?</b> One report = one document; no joins with other services. <b>Layers:</b> IncidentController → IncidentService → IncidentRepository (MongoDB), BinClient (OpenFeign → MS2), IncidentEventPublisher (RabbitMQ). Services never share a database.'),
+cards('MS4','MS4 interactions: sync to check, async to announce','Called by the API Gateway. Calls MS2 and MS1. Publishes IncidentReportedEvent via RabbitMQ; MS5 consumes it.',[
+{h:'Sync (OpenFeign)',c:'b',t:'GET /api/bins/{id} and GET /api/users/{id}: MS4 needs the answer before it saves the report.'},
+{h:'Async (RabbitMQ)',c:'g',t:'MS4 does not wait for MS5, so reporting stays fast.'},
+{h:'If a called service is down',c:'o',t:['MS2 or MS1 down: timeout + circuit breaker; report saved as PENDING, check retried later','RabbitMQ down: report still saved, event retried','MS5 down: event waits in the queue until MS5 restarts']}],3),
+tbl('MS4','MS4 API contract','Main endpoints, response codes and the published event.',['Method','URI','What it does','Codes'],apiT([['POST','/api/incidents','Create a report (with photo)','201 · 400 · 404'],['GET','/api/incidents','List reports (by status)','200'],['GET','/api/incidents/{id}','Get one report','200 · 404'],['PATCH','/api/incidents/{id}/status','Admin changes the status','200 · 400 · 403 · 404'],['DELETE','/api/incidents/{id}','Delete a report','204 · 404']]),'<b>All routes need a JWT</b> (401 if missing). PATCH and DELETE are admin only (403). Event: <b>IncidentReportedEvent</b> {eventId, incidentId, binId, title, createdAt}: MS5 consumes it and creates an Alert.'),
+/* MS5 */
+cards('MS5 · REAL-TIME ALERTS','MS5: Real-Time Alerts Service – design &amp; data model','',[
+{h:'«Entity» Alert',c:'y',t:['id: Long [PK, auto-increment]','eventId: UUID [unique, idempotency token]','sourceId: String (e.g. binId, reportId)','message: String','severity: AlertSeverity','targetRole: String (DRIVER, OPERATOR)','createdAt: LocalDateTime','isCritical(): boolean · acknowledge(): void']},
+{h:'«Enum» AlertSeverity',c:'o',t:['INFO – routine status update, scheduled reminders','WARNING – incidents reported, maintenance needed','CRITICAL – bin fill level ≥ 90% (urgent pickup required)']},
+{h:'Architecture justifications',c:'t',t:['Database per service: dedicated H2 in-memory DB (alerts_db)','Zero external dependency: boots in under 8 s','Idempotency token: eventId prevents duplicate alerts on retry','Production path: switch to PostgreSQL via application.properties']}],3),
+`${tbl('MS5 · REAL-TIME ALERTS','MS5: interactions &amp; API contracts','Async: RabbitMQ topic smartwaste.events. MS2 BinFullEvent (key bin.full, fillLevel ≥ 90%) → queue alerts.bin-full → CRITICAL alert for DRIVER. MS4 IncidentReportedEvent (key incident.reported) → queue alerts.incident-reported → WARNING alert for OPERATOR. Durable queues, eventId idempotency check, DLX smartwaste.events.dlx for poison messages. MS5 runs on :8085.',['Method','Endpoint','Description','Success','Errors'],[
+['<b style="color:var(--g)">GET</b>','<code>/api/alerts</code>','List active alerts (?severity= &amp; ?role=)','200 [List&lt;AlertDTO&gt;]','500'],
+['<b style="color:var(--g)">GET</b>','<code>/api/alerts/{id}</code>','Retrieve alert details by ID','200 [AlertDTO]','404'],
+['<b style="color:var(--g)">GET</b>','<code>/api/alerts/severity/{level}</code>','Filter alerts by level (INFO, WARNING, CRITICAL)','200 [List&lt;AlertDTO&gt;]','400'],
+['<b style="color:#e55">DELETE</b>','<code>/api/alerts/{id}</code>','Acknowledge / dismiss active alert','204','404']])}`
+];
+const st=document.getElementById('stage');
+st.innerHTML=S.map(h=>`<section class="s">${h}</section>`).join('');
+const el=[...st.children];let i=0;
+function go(n){i=Math.max(0,Math.min(el.length-1,n));el.forEach((e,j)=>e.classList.toggle('on',j==i));document.getElementById('ct').textContent=(i+1)+' / '+el.length;history.replaceState(null,'','#'+(i+1))}
+function fit(){const k=Math.min(innerWidth/1280,(innerHeight-44)/720);st.style.transform=`translate(-50%,-50%) scale(${k})`;st.style.top=(innerHeight-44)/2+'px'}
+addEventListener('resize',fit);fit();
+addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key))go(i+1);if(['ArrowLeft','PageUp'].includes(e.key))go(i-1);if(e.key=='Home')go(0);if(e.key=='End')go(el.length-1)});
+document.getElementById('nx').onclick=()=>go(i+1);document.getElementById('pv').onclick=()=>go(i-1);
+let x0;st.addEventListener('touchstart',e=>x0=e.touches[0].clientX);st.addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-x0;if(Math.abs(d)>50)go(i+(d<0?1:-1))});
+go(parseInt(location.hash.slice(1))-1||0);
+</script></body></html>
